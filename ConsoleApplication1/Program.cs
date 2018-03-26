@@ -50,7 +50,29 @@ namespace ConsoleApplication1
 
 		private static void ReadBytes(byte[] bytes, int length)
 		{
-			var memorySTream = new MemoryStream(bytes, 0, length);
+			var memoryStream = new MemoryStream(bytes, 0, length);
+			var binaryReader = new BinaryReader(memoryStream);
+
+			// First 8 bits  of the IP header contain the version and header length
+			var bVersionAndHeaderLength = binaryReader.ReadByte();
+
+			// Next 8 bits contain the differentiated services.
+			var bDifferentiatedServices = binaryReader.ReadByte();
+
+			// Next 16 bits hold the total length of the datagram
+			var totalLength = binaryReader.ReadInt16();
+
+			// Next 16 bits for identification
+			var identification = binaryReader.ReadInt16();
+
+			// Next 16 bits contain flags and fragmentation offset
+			var flagsAndOffsets = binaryReader.ReadInt16();
+
+			// Next 8 bits have the TTL value
+			var ttl = binaryReader.ReadInt16();
+
+			// Bext 8 bits have the protocol 
+
 
 		}
 		
