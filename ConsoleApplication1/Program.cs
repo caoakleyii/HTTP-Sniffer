@@ -1,12 +1,13 @@
 ﻿using System;
+using HttpLogger.Monitors;
 
 namespace HttpLogger
 {
-	class Program
+	internal class Program
 	{
-        private static IMonitor monitor;
+        private static IMonitor _monitor;	
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
 		{
             Console.CancelKeyPress += Console_CancelKeyPress;
 
@@ -24,12 +25,12 @@ namespace HttpLogger
 				switch (key.KeyChar)
 				{
 					case '1':
-						monitor = new SocketSniff();
-						monitor.Start();
+						_monitor = new SocketSniff();
+						_monitor.Start();
 						break;
 					case '2':
-						monitor  = new Proxy();
-						monitor.Start();
+						_monitor  = new Proxy();
+						_monitor.Start();
 						break;
 					default:
 						Console.WriteLine("\n Sorry, invalid option.");
@@ -47,12 +48,9 @@ namespace HttpLogger
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        static void Console_CancelKeyPress(object sender, EventArgs e)
+        private static void Console_CancelKeyPress(object sender, EventArgs e)
         {
-            if (monitor != null)
-            {
-                monitor.Stop();
-            }
+	        _monitor?.Stop();
         }
 
     }

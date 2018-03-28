@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HttpLogger.Logger
 {
-    class Logger
+    class HttpTracer
     {
     }
 }

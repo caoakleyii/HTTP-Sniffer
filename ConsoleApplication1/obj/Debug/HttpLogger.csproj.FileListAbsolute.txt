@@ -3,8 +3,9 @@ C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\HttpLogger.exe.config
 C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\HttpLogger.exe
 C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\HttpLogger.pdb
 C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\Pluralsight.Crypto.dll
-C:\repos\HTTP-Sniffer\ConsoleApplication1\obj\Debug\HttpLogger.csproj.CoreCompileInputs.cache
-C:\repos\HTTP-Sniffer\ConsoleApplication1\obj\Debug\HttpLogger.csproj.CopyComplete
 C:\repos\HTTP-Sniffer\ConsoleApplication1\obj\Debug\HttpLogger.exe
 C:\repos\HTTP-Sniffer\ConsoleApplication1\obj\Debug\HttpLogger.pdb
 C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\BouncyCastle.Crypto.dll
+C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\NLog.dll
+C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\NLog.xml
+C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\NLog.config

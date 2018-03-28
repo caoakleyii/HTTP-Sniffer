@@ -1,4 +1,4 @@
-﻿namespace HttpLogger
+﻿namespace HttpLogger.Monitors
 {
 	public interface IMonitor
 	{
