@@ -5,31 +5,45 @@ using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 
-namespace ConsoleApplication1
+namespace HttpLogger
 {
-    public class ProxySniff
+    public class Proxy : IMonitor
     {
         private TcpListener _listener;
         private Thread _listenerThread;
         private static X509Certificate _certificate;
+	    private const string SERVER_ADDR = "127.0.0.1";
+	    private const int PORT = 8080;
 
-        public void Start()
+	    [DllImport("wininet.dll")]
+	    public static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
+	    public const int INTERNET_OPTION_SETTINGS_CHANGED = 39;
+	    public const int INTERNET_OPTION_REFRESH = 37;
+		
+	    bool settingsReturn, refreshReturn;
+
+		public void Start()
         {
-            _listener = new TcpListener(new IPEndPoint(IPAddress.Parse("0.0.0.0"), 0));
-            _listenerThread = new Thread(new ParameterizedThreadStart(Listen));
+			var ipEndpoint = new IPEndPoint(IPAddress.Parse(SERVER_ADDR), PORT);
 
-            // retrieve cert
-            var filename = "cert.cer";
-            var directory = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
-            var path = Path.Combine(directory, filename);
-            X509Certificate.CreateFromCertFile(path);
+            _listener = new TcpListener(ipEndpoint);
+            _listenerThread = new Thread(Listen);
 
+			// Turn Proxy On 
+			this.SetProxy();
+
+			// Set Trusted Cert
+            this.SetTrustedCert();
+
+			// Start Proxy
             _listenerThread.Start(_listener);
         }
 
@@ -42,7 +56,29 @@ namespace ConsoleApplication1
             _listenerThread.Join();
         }
 
-        private static void Listen(Object obj)
+	    private void SetProxy()
+	    {
+		    var reg = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings", true);
+		    reg.SetValue("ProxyServer", $"{SERVER_ADDR}:{PORT}");
+		    reg.SetValue("ProxyEnable", 1);
+
+		    // These lines implement the Interface in the beginning of program 
+		    // They cause the OS to refresh the settings, causing IP to realy update
+		    settingsReturn = InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
+		    refreshReturn = InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
+
+		}
+
+	    private void SetTrustedCert()
+	    {
+		    // retrieve cert
+		    var filename = "cert.cer";
+		    var directory = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.FullName;
+		    var path = Path.Combine(directory, filename);
+		    _certificate = X509Certificate.CreateFromCertFile(path);
+		}
+
+		private static void Listen(Object obj)
         {
             TcpListener listener = (TcpListener)obj;
             try
@@ -52,7 +88,7 @@ namespace ConsoleApplication1
                     listener.Start();
                     TcpClient client = listener.AcceptTcpClient();
                     while (!ThreadPool.QueueUserWorkItem
-                (new WaitCallback(ProxySniff.ProcessClient), client)) ;
+                (new WaitCallback(Proxy.ProcessClient), client)) ;
                 }
             }
             catch (ThreadAbortException) { }

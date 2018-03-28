@@ -1,21 +1,39 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace ConsoleApplication1
+namespace HttpLogger
 {
 	class Program
 	{
 
 		static void Main(string[] args)
 		{
-            var s = new ProxySniff();
-            s.Start();
+			IMonitor monitor;
+
+			Console.WriteLine("Welcome to HTTP Logger!");
+			while (true)
+			{
+				Console.WriteLine("1. Raw Socket Logging");
+				Console.WriteLine("2. Proxy Man In The Middle Logging");
+				var key = Console.ReadKey();
+
+				switch (key.KeyChar)
+				{
+					case '1':
+						monitor = new SocketSniff();
+						monitor.Start();
+						break;
+					case '2':
+						monitor  = new Proxy();
+						monitor.Start();
+						break;
+					default:
+						Console.WriteLine("\nSorry, invalid option.");
+						continue;
+				}
+
+				break;
+			}
+			
 
 		}
 		

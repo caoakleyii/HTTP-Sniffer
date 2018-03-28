@@ -7,17 +7,17 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ConsoleApplication1
+namespace HttpLogger
 {
-    public class SocketSniff
+    public class SocketSniff : IMonitor
     {
         byte[] _byteData = new byte[65536];
         Socket _socket;
-        private bool _open = true;
-
+        private bool _open;
+	    private bool _monitor;
         public void Start()
         {
-            Console.WriteLine("Enter IP Address of Local Machine");
+            Console.WriteLine("\nEnter IP Address of Local Machine");
             var ipAddress = Console.ReadLine();
 
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
@@ -29,17 +29,25 @@ namespace ConsoleApplication1
 
             _socket.IOControl(IOControlCode.ReceiveAll, byTrue, null);
 
-            while (true)
+            while (_monitor)
             {
-                if (!_open)
+                if (_open)
                 {
                     continue;
                 }
 
-                _open = false;
+                _open = true;
                 _socket.BeginReceive(_byteData, 0, _byteData.Length, SocketFlags.None, Callback, null);
             }
-        }
+
+	        _socket.Close();
+		}
+
+	    public void Stop()
+	    {
+		    _monitor = false;
+	    }
+
         private void Callback(IAsyncResult ar)
         {
             ReadBytes(_byteData, _byteData.Length);
