@@ -1,0 +1,1 @@
+2018-03-29 14:26:30.6182|TRACE|HttpLogger.Contexts.FileContext|POST /http-bind/ HTTP/1.1

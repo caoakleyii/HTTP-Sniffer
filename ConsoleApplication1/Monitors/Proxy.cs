@@ -1,17 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Security.Authentication;
-using System.Text.RegularExpressions;
 using System.Threading;
-using HttpLogger.Providers;
+using HttpLogger.Repositories;
+using HttpLogger.Services;
 using Microsoft.Win32;
 using NLog;
 using Org.BouncyCastle.Crypto;
@@ -93,7 +87,7 @@ namespace HttpLogger.Monitors
             ListenerThread = new Thread(Listen);
 
             // Generate CA Cert
-            _issuerKey = CertificateProvider.GenerateCACertificate();
+            _issuerKey = CertificateService.GenerateCACertificate();
 
 			// Turn Proxy On 
 	        var proxyEnabled = this.SetProxy(true);
@@ -150,10 +144,10 @@ namespace HttpLogger.Monitors
 		    return true;
 	    }
 
-        /// <summary>
-        /// The start of the new thread. Proxy server listenings for requests from the client.
-        /// </summary>
-        /// <param name="obj"></param>
+		/// <summary>
+		/// The start of the new thread. Proxy server listenings for requests from the client.
+		/// </summary>
+		/// <param name="obj">The TcpClient connecting to the proxy server.</param>
 		private static void Listen(object obj)
         {
             var listener = (TcpListener)obj;
@@ -174,28 +168,32 @@ namespace HttpLogger.Monitors
         }
 
 		/// <summary>
-		/// 
+		/// Handle and process the current Tcp Client connected to the client.
+		/// Creates a proxy request and response for the client.
 		/// </summary>
-		/// <param name="obj"></param>
+		/// <param name="obj">The TcpClient connecting to the proxy server.</param>
         private static void ProcessClient(object obj)
         {
             var client = (TcpClient)obj;
             try
             {
                 //read the first line HTTP command
-                var proxyRequest = new ProxyRequest(client.GetStream(), _issuerKey);
+                var proxyService = new ProxyService(client, _issuerKey);
+				
+	            // generate a proxy request
+				var request = proxyService.ProcessRequest();
 
-	            if (!proxyRequest.SuccessfulInitializaiton)
+				if (!request.SuccessfulInitializaiton)
 	            {
 		            return;
 	            }
+				
+	            // handle response
+	            proxyService.ProcessResponse(request);
 
-				proxyRequest.Process();
-
-                // handle response
-                var proxyResponse = new ProxyResponse();
-				proxyResponse.Process(proxyRequest);
-	            
+				// trace this proxy request
+				var traceService = new HttpTracerService(new HttpTraceRepository());
+				traceService.TraceProxyRequest(request);
             }
             catch (Exception ex)
             {

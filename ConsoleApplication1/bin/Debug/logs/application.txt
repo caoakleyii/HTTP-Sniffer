@@ -1,0 +1,74 @@
+2018-03-29 16:40:25.3473|ERROR|HttpLogger.Monitors.Proxy|System.ArgumentException: 100-Continue may not be set using this property.
+Parameter name: value
+   at System.Net.HttpWebRequest.set_Expect(String value)
+   at HttpLogger.Services.ProxyService.ReadRequestHeaders(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 295
+   at HttpLogger.Services.ProxyService.ProcessRequest() in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 72
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 184
+2018-03-29 16:40:29.2684|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The operation has timed out
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192
+2018-03-29 16:40:29.3376|ERROR|HttpLogger.Monitors.Proxy|System.ArgumentException: 100-Continue may not be set using this property.
+Parameter name: value
+   at System.Net.HttpWebRequest.set_Expect(String value)
+   at HttpLogger.Services.ProxyService.ReadRequestHeaders(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 295
+   at HttpLogger.Services.ProxyService.ProcessRequest() in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 72
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 184
+2018-03-29 16:40:29.5612|ERROR|HttpLogger.Monitors.Proxy|System.ArgumentException: 100-Continue may not be set using this property.
+Parameter name: value
+   at System.Net.HttpWebRequest.set_Expect(String value)
+   at HttpLogger.Services.ProxyService.ReadRequestHeaders(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 295
+   at HttpLogger.Services.ProxyService.ProcessRequest() in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 72
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 184
+2018-03-29 16:40:29.5923|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The underlying connection was closed: The connection was closed unexpectedly.
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192
+2018-03-29 16:40:30.3298|ERROR|HttpLogger.Monitors.Proxy|System.ArgumentException: 100-Continue may not be set using this property.
+Parameter name: value
+   at System.Net.HttpWebRequest.set_Expect(String value)
+   at HttpLogger.Services.ProxyService.ReadRequestHeaders(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 295
+   at HttpLogger.Services.ProxyService.ProcessRequest() in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 72
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 184
+2018-03-29 16:40:32.3059|ERROR|HttpLogger.Monitors.Proxy|System.ArgumentException: 100-Continue may not be set using this property.
+Parameter name: value
+   at System.Net.HttpWebRequest.set_Expect(String value)
+   at HttpLogger.Services.ProxyService.ReadRequestHeaders(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 295
+   at HttpLogger.Services.ProxyService.ProcessRequest() in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 72
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 184
+2018-03-29 16:40:32.3320|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The underlying connection was closed: The connection was closed unexpectedly.
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192
+2018-03-29 16:40:41.8130|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The operation has timed out
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192
+2018-03-29 16:40:41.8316|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The operation has timed out
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192
+2018-03-29 16:40:41.8571|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The operation has timed out
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192
+2018-03-29 16:40:41.8742|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The operation has timed out
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192
+2018-03-29 16:40:41.9348|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The operation has timed out
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192
+2018-03-29 16:40:41.9765|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The operation has timed out
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192
+2018-03-29 16:40:42.0702|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The operation has timed out
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192
+2018-03-29 16:40:42.0902|ERROR|HttpLogger.Monitors.Proxy|System.Net.WebException: The operation has timed out
+   at System.Net.HttpWebRequest.GetResponse()
+   at HttpLogger.Services.ProxyService.ProcessResponse(ProxyRequest request) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Services\ProxyService.cs:line 104
+   at HttpLogger.Monitors.Proxy.ProcessClient(Object obj) in C:\repos\HTTP-Sniffer\ConsoleApplication1\Monitors\Proxy.cs:line 192

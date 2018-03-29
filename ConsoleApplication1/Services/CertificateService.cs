@@ -17,11 +17,11 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace HttpLogger.Providers
+namespace HttpLogger.Services
 {
-    public class CertificateProvider
+    public class CertificateService
     {
-        private const string ISSUER_NAME = "DO_NOT_TRUST_HTTP_Logger_Root";
+        private const string IssuerName = "DO_NOT_TRUST_HTTP_Logger_Root";
 
         public static X509Certificate2 GetSelfSignedCertificate(Uri subjectUri, AsymmetricKeyParameter issuerPrivKey, StoreName storeName = StoreName.My, StoreLocation storeLocation = StoreLocation.CurrentUser)
         {
@@ -32,11 +32,11 @@ namespace HttpLogger.Providers
                 store.Open(OpenFlags.ReadOnly);
 
                 var results = store.Certificates.Find(X509FindType.FindBySubjectName, $"*.{subjectUri.DnsSafeHost}", false);
-                results = results.Find(X509FindType.FindByIssuerName, ISSUER_NAME, false);
+                results = results.Find(X509FindType.FindByIssuerName, IssuerName, false);
 
                 if (results.Count <= 0)
                 {                    
-                    return GenerateSelfSignedCertificate(subjectUri, ISSUER_NAME, issuerPrivKey);
+                    return GenerateSelfSignedCertificate(subjectUri, IssuerName, issuerPrivKey);
                 }
 
                 cert = results[0];
@@ -54,7 +54,7 @@ namespace HttpLogger.Providers
             return cert;
         }
 
-        public static AsymmetricKeyParameter GenerateCACertificate(string subjectName = ISSUER_NAME, int keyStrength = 2048)
+        public static AsymmetricKeyParameter GenerateCACertificate(string subjectName = IssuerName, int keyStrength = 2048)
         {
             // Generating Random Numbers
             var randomGenerator = new CryptoApiRandomGenerator();
@@ -234,7 +234,7 @@ namespace HttpLogger.Providers
             try
             {
                 store.Open(OpenFlags.ReadOnly);
-                var results = store.Certificates.Find(X509FindType.FindByIssuerName, ISSUER_NAME, false);
+                var results = store.Certificates.Find(X509FindType.FindByIssuerName, IssuerName, false);
 
                 if (results.Count <= 0)
                 {
