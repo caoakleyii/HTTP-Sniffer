@@ -10,12 +10,12 @@ using Microsoft.Win32;
 using NLog;
 using Org.BouncyCastle.Crypto;
 
-namespace HttpLogger.Monitors
+namespace HttpLogger.HttpMonitors
 {
     /// <summary>
-    /// Defines the Proxy class which is used as a man in the middle approach to listen to HTTP traffic on the current machine.
+    /// Defines the <see cref="ProxyServer"/> class which is used as a man in the middle approach to listen to HTTP traffic on the current machine.
     /// </summary>
-    public class Proxy : IMonitor
+    public class ProxyServer : IMonitor
     {
         
         [DllImport("wininet.dll")]
@@ -27,26 +27,26 @@ namespace HttpLogger.Monitors
 
 	    
         /// <summary>
-        /// Creates a new instance of a <see cref="Proxy"/> server, with the default IP address and port defined within the app settings.
+        /// Creates a new instance of a <see cref="ProxyServer"/> server, with the default IP address and port defined within the app settings.
         /// 
         /// App Setting keys are defined as:
         /// "ProxyIPAddress" for the default IP Address
         /// "ProxyPort" for the default port number
         /// </summary>
-        public Proxy() : this(DefaultAddress, DefaultPort, LogManager.GetCurrentClassLogger())
+        public ProxyServer() : this(DefaultAddress, DefaultPort, LogManager.GetCurrentClassLogger())
         {
 	        
         }
 
 	    /// <summary>
-	    /// Creates a new instance of a <see cref="Proxy"/> server, with the provided IP addrress and port.
+	    /// Creates a new instance of a <see cref="ProxyServer"/> server, with the provided IP addrress and port.
 	    /// </summary>
 	    /// <param name="address">The IP Address the proxy server will be listening on.</param>
 	    /// <param name="port">The port number the proxy server will be listening on.</param>
 	    /// <param name="logger"></param>
-	    public Proxy(string address, int port, ILogger logger)
+	    public ProxyServer(string address, int port, ILogger logger)
 		{
-			Logger = logger;
+			NLogger = logger;
             this.ServerAddress = address;
             this.Port = port;            
         }
@@ -64,15 +64,15 @@ namespace HttpLogger.Monitors
 		/// <summary>
 		/// Gets the NLog <see cref="ILogger"/> instance to handle application level logging.
 		/// </summary>
-		private static ILogger Logger { get; set; }
+		private static ILogger NLogger { get; set; }
 
         /// <summary>
-        /// Gets the port being used by the current instance of <see cref="Proxy"/>.
+        /// Gets the port being used by the current instance of <see cref="ProxyServer"/>.
         /// </summary>
         public int Port { get; }
 
         /// <summary>
-        /// Gets the Server Address being used by the current instance of of <see cref="Proxy"/>.
+        /// Gets the Server Address being used by the current instance of of <see cref="ProxyServer"/>.
         /// </summary>
         public string ServerAddress { get; }
 
@@ -86,8 +86,18 @@ namespace HttpLogger.Monitors
             Listener = new TcpListener(ipEndpoint);
             ListenerThread = new Thread(Listen);
 
+            Console.WriteLine("\n Issuing a self-signed trusted cert to decrypt HTTPS traffic.");
+            Console.WriteLine(" To monitor HTTPS traffic, this cert will need to be accepted and saved into your trusted store.");
+            Console.WriteLine(" To do so, please accept the next prompt.");
+            
+
             // Generate CA Cert
             _issuerKey = CertificateService.GenerateCACertificate();
+
+            if (_issuerKey == null)
+            {
+                Console.WriteLine("\n Unable to generate a CA Certificate. Proxying HTTP traffic only.");
+            }
 
 			// Turn Proxy On 
 	        var proxyEnabled = this.SetProxy(true);
@@ -178,27 +188,29 @@ namespace HttpLogger.Monitors
             try
             {
                 //read the first line HTTP command
-                var proxyService = new ProxyService(client, _issuerKey);
-				
-	            // generate a proxy request
-				var request = proxyService.ProcessRequest();
+                using (var proxyService = new ProxyService(client, _issuerKey))
+                using (var traceService = new HttpTracerService(new HttpTraceRepository()))
+                {
+                    // generate a proxy request
+                    var request = proxyService.ProcessRequest();
 
-				if (!request.SuccessfulInitializaiton)
-	            {
-		            return;
-	            }
-				
-	            // handle response
-	            proxyService.ProcessResponse(request);
+                    if (!request.SuccessfulInitializaiton)
+                    {
+                        return;
+                    }
 
-				// trace this proxy request
-				var traceService = new HttpTracerService(new HttpTraceRepository());
-				traceService.TraceProxyRequest(request);
+                    // handle response
+                    proxyService.ProcessResponse(request);
+
+                    // trace this proxy request
+                    traceService.TraceProxyRequest(request);
+                }
+                        
             }
             catch (Exception ex)
             {
                 //handle exception
-				Logger.Error(ex);
+				NLogger.Error(ex);
             }
             finally
             {

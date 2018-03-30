@@ -7,37 +7,34 @@ using System.Linq;
 using System.Net;
 using System.Net.Security;
 using System.Security.Authentication;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using HttpLogger.Models;
-using HttpLogger.Monitors;
 using NLog;
 using Org.BouncyCastle.Crypto;
 using System.Net.Sockets;
-using Newtonsoft.Json;
 
 namespace HttpLogger.Services
 {
-	public class ProxyService
+    /// <summary>
+    /// Defines the <see cref="ProxyService"/> used to process request and responses for a proxy server.
+    /// </summary>
+	public class ProxyService : IDisposable
 	{
+        /// <summary>
+        /// Compiled regex defining how to split the cookies in the clients request.
+        /// </summary>
 		private static readonly Regex CookieSplitRegEx = new Regex(@",(?! )", RegexOptions.Compiled);
-		private const int BufferSize = 8192;
 
-		public Stream ClientStream { get; }
+        /// <summary>
+        /// Constant defining the buffer size of the response if no content length is provided.
+        /// </summary>
+		private const int BUFFER_SIZE = 8192;
 
-		public SslStream SslStream { get; private set; }
-
-		public StreamReader ClientStreamReader { get; private set; }
-
-		private AsymmetricKeyParameter IssuerKey { get; }
-
-		private ILogger NLogger { get; }
-
-		public HttpWebRequest HttpRequest { get; set; }
-
-		public TcpClient TcpClient { get; }
-
+        /// <summary>
+        /// Creates a new instance of the <see cref="ProxyService"/>
+        /// </summary>
+        /// <param name="client">The <see cref="TcpClient"/> to be used when processing the requests and response.</param>
+        /// <param name="issuerKey">The <see cref="AsymmetricKeyParameter"/> object defining the issuer key when handling TLS/SSL handshakes.</param>
 		public ProxyService(TcpClient client, AsymmetricKeyParameter issuerKey)
 		{
 			this.TcpClient = client;
@@ -46,8 +43,49 @@ namespace HttpLogger.Services
 			this.IssuerKey = issuerKey;
 		}
 
-		
-		public ProxyRequest ProcessRequest()
+        /// <summary>
+        /// Gets or sets the client <see cref="Stream"/>.
+        /// </summary>
+	    public Stream ClientStream { get; }
+
+        /// <summary>
+        /// Gets or sets the client's <see cref="SslStream"/> if the connection is upgraded to TLS/SSL.
+        /// </summary>
+	    public SslStream SslStream { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the client's <see cref="StreamReader"/>.
+        /// </summary>
+	    public StreamReader ClientStreamReader { get; private set; }
+
+        /// <summary>
+        /// Gets the <see cref="AsymmetricKeyParameter"/> object of the issuer key.
+        /// </summary>
+	    private AsymmetricKeyParameter IssuerKey { get; }
+
+        /// <summary>
+        /// Gets the current classes instance of <see cref="ILogger"/>.
+        /// </summary>
+	    private ILogger NLogger { get; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="HttpWebRequest"/> object that 
+        /// is used to make a request to the remote server on behalf of the client.
+        /// </summary>
+	    public HttpWebRequest HttpRequest { get; set; }
+
+        /// <summary>
+        /// Gets the <see cref="TcpClient"/>.
+        /// </summary>
+	    public TcpClient TcpClient { get; }
+
+        /// <summary>
+        /// After intercepting the request from the client, this starts the initialization of processing a request for the client.
+        /// and handling an TLS/SSL handshake if required. Returning a populated <see cref="ProxyRequest"/> object defining the data needed to 
+        /// process a request and response to the remote server.
+        /// </summary>
+        /// <returns>Returns a <see cref="ProxyRequest"/> object encapsulating the client's request.</returns>
+        public ProxyRequest ProcessRequest()
 		{
 			var request = new ProxyRequest
 			{
@@ -55,35 +93,46 @@ namespace HttpLogger.Services
 				RequestDateTime = DateTime.Now
 			};
 
-			// Initialize the request object. populating the data based on the http headers within the client stream
-			this.InitializeRequest(request);
+            // Initialize the request object. populating the data based on the http headers within the client stream
+		    this.ClientStreamReader = new StreamReader(this.ClientStream);
+		    var httpCommand = this.ClientStreamReader.ReadLine();
 
-			if (!request.SuccessfulInitializaiton)
-			{
-				return request;
-			}
+		    if (string.IsNullOrEmpty(httpCommand))
+		    {
+		        request.SuccessfulInitializaiton = false;
+		        this.NLogger.Warn("Data header of a proxy request was null or empty.");
+		        return request;
+		    }
 
-			// create the web request, we are issuing on behalf of the client.
-			this.HttpRequest = (HttpWebRequest)WebRequest.Create(request.RemoteUri);
-			this.HttpRequest.Method = request.Method;
-			this.HttpRequest.ProtocolVersion = request.Version;
+		    var httpCommandSplit = httpCommand.Split(' ');
+		    request.Method = httpCommandSplit[0];
+		    request.RemoteUri = httpCommandSplit[1];
+		    request.HttpVersion = new Version(httpCommandSplit[2].Split('/')[1]);
 
-			//read the request headers from the client and copy them to our request
-			this.ReadRequestHeaders(request);
-			
-			this.HttpRequest.Proxy = null;
-			this.HttpRequest.KeepAlive = false;
-			this.HttpRequest.AllowAutoRedirect = false;
-			this.HttpRequest.AutomaticDecompression = DecompressionMethods.None;
-
-			return request;
+		    request.SuccessfulInitializaiton = request.Method != "CONNECT" || this.SslHandshake(request);
+            return request;
 		}
 
-
-
+        /// <summary>
+        /// Process a request and response to the remote server on behalf of the client and write to the clients stream with the response from the server.
+        /// </summary>
+        /// <param name="request">The <see cref="ProxyRequest"/> to be handled.</param>
 		public void ProcessResponse(ProxyRequest request)
 		{
-			if (request.Method.ToUpper() == "POST")
+		    // create the web request, we are issuing on behalf of the client.
+		    this.HttpRequest = (HttpWebRequest)WebRequest.Create(request.RemoteUri);
+		    this.HttpRequest.Method = request.Method;
+		    this.HttpRequest.ProtocolVersion = request.HttpVersion;
+
+		    //read the request headers from the client and copy them to our request
+		    this.ReadRequestHeaders(request);
+
+		    this.HttpRequest.Proxy = null;
+		    this.HttpRequest.KeepAlive = false;
+		    this.HttpRequest.AllowAutoRedirect = false;
+		    this.HttpRequest.AutomaticDecompression = DecompressionMethods.None;
+
+            if (request.Method.ToUpper() == "POST")
 			{
 				var postBuffer = new char[request.ContentLength];
 				int bytesRead;
@@ -101,9 +150,7 @@ namespace HttpLogger.Services
 
 			this.HttpRequest.Timeout = 15000;
 
-			var response = this.HttpRequest.GetResponse() as HttpWebResponse;
-
-			if (response == null)
+		    if (!(this.HttpRequest.GetResponse() is HttpWebResponse response))
 			{
 				return;
 			}
@@ -112,13 +159,13 @@ namespace HttpLogger.Services
 
 			var outStream = request.IsHttps ? this.SslStream : this.ClientStream;
 
-			var myResponseWriter = new StreamWriter(outStream);
+			var responseWriter = new StreamWriter(outStream);
 			var responseStream = response.GetResponseStream();
 
 			if (responseStream == null)
 			{
 				response.Close();
-				myResponseWriter.Close();
+				responseWriter.Close();
 				return;
 			}
 
@@ -127,11 +174,11 @@ namespace HttpLogger.Services
 					
 				//send the response status and response headers
 				request.StatusCode = response.StatusCode;
-				WriteResponseStatus(response.StatusCode, response.StatusDescription, myResponseWriter);
-				WriteResponseHeaders(myResponseWriter, responseHeaders);
+				WriteResponseStatus(request, response.StatusCode, response.StatusDescription, responseWriter);
+				WriteResponseHeaders(responseWriter, responseHeaders);
 
 
-				var buffer = response.ContentLength > 0 ? new byte[response.ContentLength] : new byte[BufferSize];
+				var buffer = response.ContentLength > 0 ? new byte[response.ContentLength] : new byte[BUFFER_SIZE];
 
 				int bytesRead;
 
@@ -158,38 +205,19 @@ namespace HttpLogger.Services
 			{
 				responseStream.Close();
 				response.Close();
-				myResponseWriter.Close();
+				responseWriter.Close();
 			}
 		}
 
 		#region Private Request Methods
 
-		private void InitializeRequest(ProxyRequest request)
-		{
-			this.ClientStreamReader = new StreamReader(this.ClientStream);
-			var httpCommand = this.ClientStreamReader.ReadLine();
-
-			if (string.IsNullOrEmpty(httpCommand))
-			{
-				request.SuccessfulInitializaiton = false;
-				this.NLogger.Warn("Data header of a proxy request was null or empty.");
-				return;
-			}
-			
-			var httpCommandSplit = httpCommand.Split(' ');
-			request.Method = httpCommandSplit[0];
-			request.RemoteUri = httpCommandSplit[1];
-			request.Version = new Version(httpCommandSplit[2].Split('/')[1]);
-
-			if (request.Method == "CONNECT")
-			{
-				request.SuccessfulInitializaiton = this.SslHandshake(request);
-				return;
-			}
-
-			request.SuccessfulInitializaiton = true;
-		}
-
+        /// <summary>
+        /// Handle the TLS/SSL hande upgrade for the request provided.
+        /// </summary>
+        /// <param name="request">
+        /// The <see cref="ProxyRequest"/> object associated with the TLS/SSL handshake
+        /// </param>
+        /// <returns>Returns a <see cref="bool"/> value indicating whether or not the handshake was successful</returns>
 		private bool SslHandshake(ProxyRequest request)
 		{
 			request.IsHttps = true;
@@ -204,11 +232,10 @@ namespace HttpLogger.Services
 			while (!string.IsNullOrEmpty(this.ClientStreamReader.ReadLine()))
 			{
 			}
-
-
+            
 			//tell the client that a tunnel has been established
 			var connectStreamWriter = new StreamWriter(this.ClientStream);
-			connectStreamWriter.WriteLine($"HTTP/{request.Version.ToString(2)} 200 Connection established");
+			connectStreamWriter.WriteLine($"HTTP/{request.HttpVersion.ToString(2)} 200 Connection established");
 			connectStreamWriter.WriteLine
 				($"Timestamp: {DateTime.Now.ToString(CultureInfo.InvariantCulture)}");
 			connectStreamWriter.WriteLine("Proxy-agent: http-logger.net");
@@ -241,6 +268,10 @@ namespace HttpLogger.Services
 			return true;
 		}
 
+        /// <summary>
+        /// Reads the headers from the stream and updates <see cref="HttpRequest"/> object and <see cref="ProxyRequest"/> data model.
+        /// </summary>
+        /// <param name="request"></param>
 		private void ReadRequestHeaders(ProxyRequest request)
 		{
 			string httpCmd;
@@ -278,8 +309,7 @@ namespace HttpLogger.Services
 						//ignore
 						break;
 					case "content-length":
-						int contentLength;
-						int.TryParse(header[1], out contentLength);
+					    int.TryParse(header[1], out var contentLength);
 						request.ContentLength = contentLength;
 						break;
 					case "content-type":
@@ -308,27 +338,44 @@ namespace HttpLogger.Services
 			} while (!string.IsNullOrWhiteSpace(httpCmd));
 
 		}
-		#endregion
+        #endregion
 
-		#region Private Response Methods
+        #region Private Response Methods
 
-		private static void WriteResponseStatus(HttpStatusCode code, string description, StreamWriter myResponseWriter)
+        /// <summary>
+        /// Writes a response to the client with status code.
+        /// </summary>
+        /// <param name="request">The <see cref="ProxyRequest"/> associated with the client and response.</param>
+        /// <param name="code">The <see cref="HttpStatusCode"/>. </param>
+        /// <param name="description">The description of the status.</param>
+        /// <param name="responseWriter">The response writer to the client.</param>
+        private static void WriteResponseStatus(ProxyRequest request, HttpStatusCode code, string description, StreamWriter responseWriter)
 		{
-			var s = $"HTTP/1.0 {(int)code} {description}";
-			myResponseWriter.WriteLine(s);
+			var s = $"HTTP/{request.HttpVersion.ToString(2)} {(int)code} {description}";
+			responseWriter.WriteLine(s);
 		}
 
-		private static void WriteResponseHeaders(StreamWriter myResponseWriter, List<Tuple<string, string>> headers)
+        /// <summary>
+        /// Write response headers to the client
+        /// </summary>
+        /// <param name="responseWriter">The response wrtier to the client</param>
+        /// <param name="headers">The headers to be written to the client.</param>
+		private static void WriteResponseHeaders(StreamWriter responseWriter, List<Tuple<string, string>> headers)
 		{
 			if (headers != null)
 			{
 				foreach (Tuple<string, string> header in headers)
-					myResponseWriter.WriteLine($"{header.Item1}: {header.Item2}");
+				    responseWriter.WriteLine($"{header.Item1}: {header.Item2}");
 			}
-			myResponseWriter.WriteLine();
-			myResponseWriter.Flush();
+		    responseWriter.WriteLine();
+		    responseWriter.Flush();
 		}
 
+        /// <summary>
+        /// Read response headers from the server.
+        /// </summary>
+        /// <param name="response">The <see cref="HttpWebResponse"/> from the remote server.</param>
+        /// <returns>Returns a <see cref="List{T}"/> of headers.</returns>
 		private static List<Tuple<string, string>> ReadResponseHeaders(HttpWebResponse response)
 		{
 			string value = null;
@@ -357,5 +404,11 @@ namespace HttpLogger.Services
 
 		#endregion
 
+	    public void Dispose()
+	    {
+	        this.TcpClient.Close();
+            this.ClientStream.Close();
+            this.ClientStreamReader.Close();
+	    }
 	}
 }

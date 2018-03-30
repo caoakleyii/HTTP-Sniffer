@@ -32,6 +32,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="BouncyCastle.Crypto, Version=1.8.1.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
       <HintPath>..\packages\BouncyCastle.1.8.1\lib\BouncyCastle.Crypto.dll</HintPath>
@@ -43,9 +46,6 @@
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.4.5.0\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
-    </Reference>
-    <Reference Include="Pluralsight.Crypto, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Pluralsight.Crypto.1.1.0\lib\net35\Pluralsight.Crypto.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
@@ -69,11 +69,11 @@
     <Compile Include="Services\HttpTracerService.cs" />
     <Compile Include="Models\ProxyRequest.cs" />
     <Compile Include="Services\CertificateService.cs" />
-    <Compile Include="Monitors\IMonitor.cs" />
+    <Compile Include="HttpMonitors\IMonitor.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Monitors\Proxy.cs" />
-    <Compile Include="Monitors\SocketSniff.cs" />
+    <Compile Include="HttpMonitors\ProxyServer.cs" />
+    <Compile Include="HttpMonitors\SocketSniff.cs" />
     <Compile Include="Services\ProxyService.cs" />
   </ItemGroup>
   <ItemGroup>

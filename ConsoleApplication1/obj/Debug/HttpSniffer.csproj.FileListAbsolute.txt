@@ -1,7 +1,0 @@
-C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\ConsoleApplication1.exe.config
-C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\ConsoleApplication1.exe
-C:\repos\HTTP-Sniffer\ConsoleApplication1\bin\Debug\ConsoleApplication1.pdb
-C:\repos\HTTP-Sniffer\ConsoleApplication1\obj\Debug\HttpSniffer.csprojResolveAssemblyReference.cache
-C:\repos\HTTP-Sniffer\ConsoleApplication1\obj\Debug\HttpSniffer.csproj.CoreCompileInputs.cache
-C:\repos\HTTP-Sniffer\ConsoleApplication1\obj\Debug\ConsoleApplication1.exe
-C:\repos\HTTP-Sniffer\ConsoleApplication1\obj\Debug\ConsoleApplication1.pdb

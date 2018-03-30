@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using HttpLogger.Models;
 using NLog;
@@ -7,41 +8,59 @@ using System.Text;
 
 namespace HttpLogger.Contexts
 {
+    /// <summary>
+    /// Defines the <see cref="FileContext"/> singleton class which provides facilities for querying and intereacting with the file storage of our http trace logs.
+    /// </summary>
 	public class FileContext
 	{
+        /// <summary>
+        /// Creates a new instance of a <see cref="FileContext"/>. 
+        /// </summary>
 		private FileContext()
 		{
 			this.NLogger = NLog.LogManager.GetCurrentClassLogger();
-			this.HttpTraces = new Dictionary<string, HttpTrace>();
-			this.Initalize();
+		    this.HttpTraces = new OrderedDictionary();
 		}
-
-		private void Initalize()
-		{
-
-		}
-
+        
+        /// <summary>
+        /// Gets the singleton instance of the <see cref="FileContext"/>
+        /// </summary>
 		public static FileContext Instance => Nested.instance;
 
-		public IDictionary<string, HttpTrace> HttpTraces { get; set; }
+        /// <summary>
+        /// Gets or sets the HttpTrace Entities used to interact with our file storage.
+        /// </summary>
+		public IOrderedDictionary HttpTraces { get; set; }
 		
-		private Logger NLogger { get; }
+        /// <summary>
+        /// Gets the current classes instance of the NLog <see cref="ILogger"/>
+        /// </summary>
+		private ILogger NLogger { get; }
 
+        /// <summary>
+        /// Saves the changes made to the entities within FileContext.
+        /// Saves HttpTraces to {baseDir}/logs/http.txt, while debugging baseDir is located within your bin/Debug.
+        /// </summary>
 		public void SaveChanges()
 		{
 			var traceBuilder = new StringBuilder();
 
 			traceBuilder.AppendLine(string.Empty);
 
-			this.HttpTraces.ToList().ForEach(trace =>
+			foreach (DictionaryEntry trace in this.HttpTraces)
 			{
-				traceBuilder.AppendLine(
-					$"{trace.Value.ClientIPAddress.ToString()} - - [{trace.Value.RequestDate:%d/%MMM/%yyyy:%H:%mm:%ss %z}] {trace.Value.HttpCommand} {trace.Value.StatusCode} {trace.Value.ContentSize}");
-			});
+			    if (!(trace.Key is HttpTrace t))
+			        continue;
+			    traceBuilder.AppendLine(
+			        $"{t.ClientIPAddress} - - [{t.RequestDate:%d/%MMM/%yyyy:%H:%mm:%ss %z}] {t.HttpCommand} {t.StatusCode} {t.ContentSize}");
+            } 
 
 			NLogger.Trace(traceBuilder);
 		}
 
+        /// <summary>
+        /// Pirvate nested class for a lazy loading threadsafe singleton object
+        /// </summary>
 		private class Nested
 		{
 			// Explicit static constructor to tell C# compiler
@@ -52,6 +71,9 @@ namespace HttpLogger.Contexts
 
 			}
 
+            /// <summary>
+            /// internal instance of the FileContext.
+            /// </summary>
 			internal static readonly FileContext instance = new FileContext();
 		}
 	}

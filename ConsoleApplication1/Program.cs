@@ -1,11 +1,14 @@
 ﻿using System;
-using HttpLogger.Monitors;
+using HttpLogger.HttpMonitors;
+using HttpLogger.Repositories;
+using HttpLogger.Services;
 
 namespace HttpLogger
 {
 	internal class Program
 	{
-        private static IMonitor _monitor;	
+        private static IMonitor _monitor;
+	    private static HttpTracerService _tracerService;
 
         private static void Main(string[] args)
 		{
@@ -19,7 +22,7 @@ namespace HttpLogger
 			while (true)
 			{
 				Console.WriteLine(" 1. Raw Socket Monitoring");
-				Console.WriteLine(" 2. Proxy Server Monitoring");
+				Console.WriteLine(" 2. Proxy Server Monitoring [Allows HTTPS]");
 				var key = Console.ReadKey(true);
 
 				switch (key.KeyChar)
@@ -29,7 +32,7 @@ namespace HttpLogger
 						_monitor.Start();
 						break;
 					case '2':
-						_monitor  = new Proxy();
+						_monitor  = new ProxyServer();
 						_monitor.Start();
 						break;
 					default:
@@ -40,7 +43,13 @@ namespace HttpLogger
 				break;
 			}
 
-            Console.WriteLine("\n Now Monitoring HTTP Traffic");
+		    Console.WriteLine("\n Now Monitoring HTTP(S) Traffic");
+
+		    _tracerService = new HttpTracerService(new HttpTraceRepository());
+		    
+		    _tracerService.MonitorMostActiveRequest();
+		    _tracerService.MonitorHighTraffic();
+            
 		}
 
         /// <summary>
@@ -51,6 +60,7 @@ namespace HttpLogger
         private static void Console_CancelKeyPress(object sender, EventArgs e)
         {
 	        _monitor?.Stop();
+            _tracerService?.Dispose();
         }
 
     }

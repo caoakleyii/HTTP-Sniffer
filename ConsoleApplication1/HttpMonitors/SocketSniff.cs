@@ -4,12 +4,12 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace HttpLogger.Monitors
+namespace HttpLogger.HttpMonitors
 {
     public class SocketSniff : IMonitor
     {
-        byte[] _byteData = new byte[65536];
-        Socket _socket;
+        private readonly byte[] _byteData = new byte[65536];
+        private Socket _socket;
         private bool _open;
 	    private bool _monitor;
         public void Start()

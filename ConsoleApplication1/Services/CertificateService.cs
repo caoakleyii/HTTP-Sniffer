@@ -11,18 +11,45 @@ using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities;
 using Org.BouncyCastle.X509;
-using Pluralsight.Crypto;
 using System;
-using System.IO;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using NLog;
 
 namespace HttpLogger.Services
 {
+    /// <summary>
+    /// Defines the <see cref="CertificateService"/> class which is used to handle operations with Certificates.
+    /// </summary>
     public class CertificateService
     {
-        private const string IssuerName = "DO_NOT_TRUST_HTTP_Logger_Root";
+        /// <summary>
+        /// The constant value defining the issuer name signed on all public keys and private keys.
+        /// </summary>
+        private const string ISSUER_NAME = "DO_NOT_TRUST_HTTP_Logger_Root";
 
+        /// <summary>
+        /// The current classes <see cref="ILogger"/> implementation.
+        /// </summary>
+        private static ILogger _nLogger = NLog.LogManager.GetCurrentClassLogger();
+
+        /// <summary>
+        /// Retrieves a self signed cert for the subject name provided by the subject uri, from the specified store.
+        /// If the self signed cert doesn't exist, this method will attempt to create one and store it in the specified store. 
+        /// </summary>
+        /// <param name="subjectUri"><see cref="Uri"/> object the subject name</param>
+        /// <param name="issuerPrivKey"><see cref="AsymmetricKeyParameter"/> object of the issuer private key</param>
+        /// <param name="storeName">
+        /// The <see cref="StoreName"/> of where the certificate is stored. 
+        /// Default: StoreName.My
+        /// </param>
+        /// <param name="storeLocation">
+        /// The <see cref="StoreLocation"/> of where the certificate is stored.
+        /// Default: StoreLocation.CurrentUser
+        /// </param>
+        /// <returns>
+        /// Returns a <see cref="X509Certificate2"/>instance of the certificate.
+        /// </returns>
         public static X509Certificate2 GetSelfSignedCertificate(Uri subjectUri, AsymmetricKeyParameter issuerPrivKey, StoreName storeName = StoreName.My, StoreLocation storeLocation = StoreLocation.CurrentUser)
         {
             X509Certificate2 cert = null;
@@ -32,11 +59,11 @@ namespace HttpLogger.Services
                 store.Open(OpenFlags.ReadOnly);
 
                 var results = store.Certificates.Find(X509FindType.FindBySubjectName, $"*.{subjectUri.DnsSafeHost}", false);
-                results = results.Find(X509FindType.FindByIssuerName, IssuerName, false);
+                results = results.Find(X509FindType.FindByIssuerName, ISSUER_NAME, false);
 
                 if (results.Count <= 0)
                 {                    
-                    return GenerateSelfSignedCertificate(subjectUri, IssuerName, issuerPrivKey);
+                    return GenerateSelfSignedCertificate(subjectUri, ISSUER_NAME, issuerPrivKey);
                 }
 
                 cert = results[0];
@@ -44,7 +71,7 @@ namespace HttpLogger.Services
             }
             catch (Exception ex)
             {
-
+                _nLogger.Error(ex, $"Error retrieving self signed cert.");
             }
             finally
             {
@@ -54,7 +81,18 @@ namespace HttpLogger.Services
             return cert;
         }
 
-        public static AsymmetricKeyParameter GenerateCACertificate(string subjectName = IssuerName, int keyStrength = 2048)
+        /// <summary>
+        /// Generates a root CA Certificate.
+        /// </summary>
+        /// <param name="subjectName">
+        /// The name of the subject and issuer.
+        /// Default: DO_NOT_TRUST_HTTP_Logger_Root</param>
+        /// <param name="keyStrength">
+        /// The strength of thet key. 
+        /// Default: 2048
+        /// </param>
+        /// <returns></returns>
+        public static AsymmetricKeyParameter GenerateCACertificate(string subjectName = ISSUER_NAME, int keyStrength = 2048)
         {
             // Generating Random Numbers
             var randomGenerator = new CryptoApiRandomGenerator();
@@ -120,13 +158,28 @@ namespace HttpLogger.Services
             pfxCert.PrivateKey = rsaPrivate;
             
             // Add CA certificate to Root store
-            AddCertificateToStore(pfxCert, StoreName.Root, StoreLocation.CurrentUser);
-            AddCertificateToStore(cert, StoreName.Root, StoreLocation.CurrentUser);
+            if (!AddCertificateToStore(pfxCert, StoreName.Root, StoreLocation.CurrentUser) || !AddCertificateToStore(cert, StoreName.Root, StoreLocation.CurrentUser))
+            {
+                return null;
+            }
 
             return issuerKeyPair.Private;
 
-        }        
+        }
 
+        /// <summary>
+        /// Generate a self signed certificate.
+        /// </summary>
+        /// <param name="subjectName"><see cref="Uri"/> object the subject name</param>
+        /// <param name="issuerName"> The name of the issuer </param>
+        /// <param name="issuerPrivKey"><see cref="AsymmetricKeyParameter"/> object of the issuer private key</param>
+        /// <param name="keyStrength">
+        /// The strength of thet key. 
+        /// Default: 2048
+        /// </param>
+        /// <returns>
+        /// Returns a <see cref="X509Certificate2"/>instance of the certificate.
+        /// </returns>
         private static X509Certificate2 GenerateSelfSignedCertificate(Uri subjectName, string issuerName, AsymmetricKeyParameter issuerPrivKey, int keyStrength = 2048)
         {
             // Generating Random Numbers
@@ -204,6 +257,13 @@ namespace HttpLogger.Services
 
         }
 
+        /// <summary>
+        /// Adds the certificate to the certificate store.
+        /// </summary>
+        /// <param name="cert">The <see cref="X509Certificate2"/> instance of the certificate to be added.</param>
+        /// <param name="storeName">The <see cref="StoreName"/></param>
+        /// <param name="storeLocation">The <see cref="StoreLocation"/></param>
+        /// <returns>Returns a <see cref="bool"/> value indicating whether or not adding the certificate was succesful.</returns>
         private static bool AddCertificateToStore(X509Certificate2 cert, StoreName storeName, StoreLocation storeLocation)
         {
             var success = false;
@@ -219,6 +279,7 @@ namespace HttpLogger.Services
             catch (Exception ex)
             {
 
+                _nLogger.Error(ex, $"Error when adding certificate to the store.");
             }
             finally
             {
@@ -226,28 +287,6 @@ namespace HttpLogger.Services
             }
 
             return success;
-        }
-
-        private static X509Certificate2 GetCertificateAuthorityCertificate()
-        {
-            var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
-            try
-            {
-                store.Open(OpenFlags.ReadOnly);
-                var results = store.Certificates.Find(X509FindType.FindByIssuerName, IssuerName, false);
-
-                if (results.Count <= 0)
-                {
-                    return null;
-                }
-
-                return results[0];
-            }
-            catch
-            {
-                return null;
-            }
-
         }
     }
 }
