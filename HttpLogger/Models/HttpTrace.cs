@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.Http;
 
 namespace HttpLogger.Models
 {
@@ -42,6 +43,11 @@ namespace HttpLogger.Models
         /// Gets or sets a <see cref="Uri"/> of the requested uri to the remote server.
         /// </summary>
 		public Uri RemoteUri { get; set; }
+
+        /// <summary>
+        /// Gets or sets the HTTP Method of the request.
+        /// </summary>
+        public string Method { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="HttpStatusCode"/> response from the remote.

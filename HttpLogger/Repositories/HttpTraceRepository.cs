@@ -14,15 +14,20 @@ namespace HttpLogger.Repositories
         /// <summary>
         /// Gets the file database context being used to store http trace logs.
         /// </summary>
-		private FileContext Context   {get; }
+		public IFileContext Context { get; }
 
         /// <summary>
         /// Creates a new instance of a <see cref="HttpTraceRepository"/>
         /// </summary>
-		public HttpTraceRepository()
+		public HttpTraceRepository() : this (IoC.Instance.Resolve<IFileContext>())
 		{
-			this.Context = FileContext.Instance;
+			
 		}
+
+	    internal HttpTraceRepository(IFileContext fileContext)
+	    {
+	        this.Context = fileContext;
+        }
 
 	    /// <summary>
 	    /// Stores an <see cref="HttpTrace"/> in the database defined.
@@ -51,7 +56,7 @@ namespace HttpLogger.Repositories
 	    /// <returns>Returns an <see cref="HttpTrace"/></returns>
 		public HttpTrace ReadTrace(string id)
 		{
-			return (HttpTrace)this.Context.HttpTraces[id];
+			return this.Context.HttpTraces[id] as HttpTrace;
 		}
 
 	    /// <summary>

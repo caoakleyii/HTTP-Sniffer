@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using HttpLogger.Models;
 using HttpLogger.Repositories;
@@ -11,13 +12,33 @@ namespace HttpLogger.Services
     /// <summary>
     /// Defines the <see cref="HttpTracerService"/> class which is used to handle operations for logging and tracing HTTP calls.
     /// </summary>
-    public class HttpTracerService : IDisposable
+    public class HttpTracerService : IHttpTracerService
     {
+        private readonly object _lock = new object();
+
+        private IHttpTraceRepository _httpTraceRepository;
+        
         /// <summary>
         /// Gets the <see cref="IHttpTraceRepository"/> service implemenation, used for handling database operations regarding the trace logs.
         /// </summary>
-		private IHttpTraceRepository HttpTraceRepository { get; }
-
+        public IHttpTraceRepository HttpTraceRepository
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _httpTraceRepository;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _httpTraceRepository = value;
+                }
+            }
+        }
+        
         /// <summary>
         /// Gets or sets the <see cref="System.Timers.Timer"/> object.
         /// Used to handle monitoring the most active requests and displaying it periodically.
@@ -25,13 +46,26 @@ namespace HttpLogger.Services
         private Timer ActiveRequestTimer { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="Thread"/> object that is used to monitor 
+        /// traffic volume.
+        /// </summary>
+        private Thread TrafficThread { get; set; }
+
+        /// <summary>
         /// Creates a new instance of <see cref="HttpTracerService"/>
         /// </summary>
-        /// <param name="traceRepository"></param>
-	    public HttpTracerService(IHttpTraceRepository traceRepository)
+	    public HttpTracerService() : this(IoC.Instance.Resolve<IHttpTraceRepository>())
 	    {
-		    this.HttpTraceRepository = traceRepository;
 	    }
+
+        /// <summary>
+        /// Creates a new instance of <see cref="HttpTracerService"/>
+        /// </summary>
+        /// <param name="traceRepository">The HttpTraceRepository implementation</param>
+        internal HttpTracerService(IHttpTraceRepository traceRepository)
+        {
+            this.HttpTraceRepository = traceRepository;
+        }
         
         /// <summary>
         /// Logs and saves an HTTP <see cref="ProxyRequest"/>
@@ -46,11 +80,14 @@ namespace HttpLogger.Services
 			    HttpCommand = $"{request.Method} {request.RemoteUri} HTTP/{request.HttpVersion.ToString(2)}",
 				RemoteUri = new Uri(request.RemoteUri),
 			    RequestDate = request.RequestDateTime,
-			    StatusCode = request.StatusCode
+			    StatusCode = request.StatusCode,
+                Method = request.Method
 		    };
 
 			this.HttpTraceRepository.CreateTrace(httpTrace);
 			this.HttpTraceRepository.SaveChanges();
+
+	        GUI.Instance.TraceViewModel.CurrentTrace = httpTrace;
 	    }
 
         /// <summary>
@@ -63,17 +100,22 @@ namespace HttpLogger.Services
             this.ActiveRequestTimer.Enabled = true;
         }
 
+        /// <summary>
+        /// Monitors for high traffic past the provided threshold.
+        /// </summary>
         public void MonitorHighTraffic()
         {
-            var thread = new Thread(CalculateTrafficThroughput);
-            thread.Start();
+           this.TrafficThread = new Thread(CalculateTrafficThroughput);
+           this.TrafficThread.Start();
         }
 
+        /// <summary>
+        /// Calculate the traffic, to monitor for high volumes.
+        /// </summary>
         private void CalculateTrafficThroughput()
         {
             try
             {
-                
                 while (true)
                 {
                     var traces = this.HttpTraceRepository.ReadTraces();
@@ -83,21 +125,14 @@ namespace HttpLogger.Services
                         if (!(traces[i] is HttpTrace trace))
                             continue;
 
-                        if (trace.RequestDate - DateTime.Now > TimeSpan.FromMinutes(2))
+                        if (DateTime.Now - trace.RequestDate > TimeSpan.FromMinutes(2))
                         {
                             break;
                         }
                         requests++;
                     }
 
-                    if (requests > 25)
-                    {
-                        Console.Write($"High traffic generated an alert - hits = {requests}, triggered at {DateTime.Now}");
-                    }
-                    else
-                    {
-                        Console.Write("Traffic throughput is no longer over the ");
-                    }
+                    GUI.Instance.TraceViewModel.TrafficVolume = requests;
                 }
             }
             catch(ThreadAbortException) { }
@@ -150,7 +185,7 @@ namespace HttpLogger.Services
 
 			    if (count <= mostVisitedCount)
 				{
-					return;
+					continue;
 				}
 
 				mostVisitedCount = count;
@@ -162,22 +197,19 @@ namespace HttpLogger.Services
                 return;
             }
 
-			Console.WriteLine($" The most actively requested site is: {mostVisitedDnsSafeHost}");
-            Console.WriteLine(" -----------------------------------------------------------");
-	        foreach (var trace in websitesVisited[mostVisitedDnsSafeHost].Item1)
-	        {
-	            var section = trace.RemoteUri.Segments.Length > 1
-	                ? $"{trace.RemoteUri.Segments[0]}{trace.RemoteUri.Segments[1]}"
-	                : trace.RemoteUri.Segments[0];
-
-	            Console.WriteLine($"{mostVisitedDnsSafeHost}{section}");
-	        }
-            
+	        GUI.Instance.TraceViewModel.MostRequestedHost = mostVisitedDnsSafeHost;
+	        GUI.Instance.TraceViewModel.MostRequestedHostTraces = websitesVisited[mostVisitedDnsSafeHost].Item1.ToList();
 	    }
 
+        /// <summary>
+        /// Close and clean up resources being used by this instance of <see cref="HttpTracerService"/>
+        /// </summary>
         public void Dispose()
         {
-            throw new NotImplementedException();
+            if (this.TrafficThread == null || !this.TrafficThread.IsAlive) return;
+
+            this.TrafficThread.Abort();
+            this.TrafficThread.Join();
         }
     }
 }

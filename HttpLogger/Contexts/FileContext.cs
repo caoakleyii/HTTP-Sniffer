@@ -11,23 +11,18 @@ namespace HttpLogger.Contexts
     /// <summary>
     /// Defines the <see cref="FileContext"/> singleton class which provides facilities for querying and intereacting with the file storage of our http trace logs.
     /// </summary>
-	public class FileContext
+	public class FileContext : IFileContext
 	{
         /// <summary>
         /// Creates a new instance of a <see cref="FileContext"/>. 
         /// </summary>
-		private FileContext()
+		public FileContext()
 		{
 			this.NLogger = NLog.LogManager.GetCurrentClassLogger();
 		    this.HttpTraces = new OrderedDictionary();
 		}
         
-        /// <summary>
-        /// Gets the singleton instance of the <see cref="FileContext"/>
-        /// </summary>
-		public static FileContext Instance => Nested.instance;
-
-        /// <summary>
+	    /// <summary>
         /// Gets or sets the HttpTrace Entities used to interact with our file storage.
         /// </summary>
 		public IOrderedDictionary HttpTraces { get; set; }
@@ -56,25 +51,6 @@ namespace HttpLogger.Contexts
             } 
 
 			NLogger.Trace(traceBuilder);
-		}
-
-        /// <summary>
-        /// Pirvate nested class for a lazy loading threadsafe singleton object
-        /// </summary>
-		private class Nested
-		{
-			// Explicit static constructor to tell C# compiler
-			// not to mark type as beforefieldinit
-			// http://csharpindepth.com/Articles/General/Beforefieldinit.aspx
-			static Nested()
-			{
-
-			}
-
-            /// <summary>
-            /// internal instance of the FileContext.
-            /// </summary>
-			internal static readonly FileContext instance = new FileContext();
 		}
 	}
 }

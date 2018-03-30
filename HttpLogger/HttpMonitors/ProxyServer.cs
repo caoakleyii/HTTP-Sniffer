@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
+using HttpLogger.Contexts;
 using HttpLogger.Repositories;
 using HttpLogger.Services;
 using Microsoft.Win32;
@@ -33,22 +34,25 @@ namespace HttpLogger.HttpMonitors
         /// "ProxyIPAddress" for the default IP Address
         /// "ProxyPort" for the default port number
         /// </summary>
-        public ProxyServer() : this(DefaultAddress, DefaultPort, LogManager.GetCurrentClassLogger())
+        public ProxyServer() : this(IoC.Instance.Resolve<IHttpTracerService>(), DefaultAddress, DefaultPort)
         {
 	        
         }
 
-	    /// <summary>
-	    /// Creates a new instance of a <see cref="ProxyServer"/> server, with the provided IP addrress and port.
-	    /// </summary>
-	    /// <param name="address">The IP Address the proxy server will be listening on.</param>
-	    /// <param name="port">The port number the proxy server will be listening on.</param>
-	    /// <param name="logger"></param>
-	    public ProxyServer(string address, int port, ILogger logger)
+
+        /// <summary>
+        /// Creates a new instance of a <see cref="ProxyServer"/> server, with the provided IP addrress and port.
+        /// </summary>
+        /// <param name="httpTracerService">The <see cref="IHttpTracerService"/> instance. </param>
+        /// <param name="address">The IP Address the proxy server will be listening on.</param>
+        /// <param name="port">The port number the proxy server will be listening on.</param>
+        internal ProxyServer(IHttpTracerService httpTracerService, string address, int port)
 		{
-			NLogger = logger;
+			NLogger = LogManager.GetCurrentClassLogger();
+
+		    this.HttpTracerService = httpTracerService;
             this.ServerAddress = address;
-            this.Port = port;            
+            this.Port = port;
         }
 
 		/// <summary>
@@ -64,7 +68,12 @@ namespace HttpLogger.HttpMonitors
 		/// <summary>
 		/// Gets the NLog <see cref="ILogger"/> instance to handle application level logging.
 		/// </summary>
-		private static ILogger NLogger { get; set; }
+		private ILogger NLogger { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the <see cref="HttpTracerService"/> to trace and interact with each request.
+        /// </summary>
+        public IHttpTracerService HttpTracerService { get; set; }
 
         /// <summary>
         /// Gets the port being used by the current instance of <see cref="ProxyServer"/>.
@@ -106,10 +115,13 @@ namespace HttpLogger.HttpMonitors
 				Console.WriteLine("\n Unable to set your proxy options. Please enable and use this server as your proxy within your Internet Properties LAN settings.");
 	        }
 
-			// Start Proxy
-            ListenerThread.Start(Listener);
+            Console.Clear();
+            Console.CursorVisible = false;
 
-            Console.WriteLine($"\n Proxy Server listening at {this.ServerAddress}:{this.Port}.");
+            // Start Proxy
+            ListenerThread.Start(Listener);
+            Console.WriteLine($" Proxy Server listening at {this.ServerAddress}:{this.Port}.");
+
         }
 
         /// <summary>
@@ -158,7 +170,7 @@ namespace HttpLogger.HttpMonitors
 		/// The start of the new thread. Proxy server listenings for requests from the client.
 		/// </summary>
 		/// <param name="obj">The TcpClient connecting to the proxy server.</param>
-		private static void Listen(object obj)
+		private void Listen(object obj)
         {
             var listener = (TcpListener)obj;
             try
@@ -182,14 +194,14 @@ namespace HttpLogger.HttpMonitors
 		/// Creates a proxy request and response for the client.
 		/// </summary>
 		/// <param name="obj">The TcpClient connecting to the proxy server.</param>
-        private static void ProcessClient(object obj)
+        private void ProcessClient(object obj)
         {
             var client = (TcpClient)obj;
             try
             {
                 //read the first line HTTP command
                 using (var proxyService = new ProxyService(client, _issuerKey))
-                using (var traceService = new HttpTracerService(new HttpTraceRepository()))
+                using (this.HttpTracerService)
                 {
                     // generate a proxy request
                     var request = proxyService.ProcessRequest();
@@ -203,7 +215,7 @@ namespace HttpLogger.HttpMonitors
                     proxyService.ProcessResponse(request);
 
                     // trace this proxy request
-                    traceService.TraceProxyRequest(request);
+                    this.HttpTracerService.TraceProxyRequest(request);
                 }
                         
             }

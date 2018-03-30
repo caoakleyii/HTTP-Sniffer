@@ -189,10 +189,10 @@ namespace HttpLogger.Services
 				
 				outStream.Flush();
 			}
-			catch (Win32Exception ex)
+			catch (IOException ex)
 			{
 				// connection was closed by browser/client not an issue.
-				if (ex.NativeErrorCode != 10053)
+				if ((ex.InnerException as Win32Exception)?.NativeErrorCode == 10053)
 					return;
 
 				this.NLogger.Error(ex);
@@ -264,7 +264,7 @@ namespace HttpLogger.Services
 
 			var httpCommandSplit = httpCommand.Split(' ');
 			request.Method = httpCommandSplit[0];
-			request.RemoteUri += httpCommandSplit[1];
+		    request.RemoteUri += httpCommandSplit[1];
 			return true;
 		}
 
@@ -351,7 +351,7 @@ namespace HttpLogger.Services
         /// <param name="responseWriter">The response writer to the client.</param>
         private static void WriteResponseStatus(ProxyRequest request, HttpStatusCode code, string description, StreamWriter responseWriter)
 		{
-			var s = $"HTTP/{request.HttpVersion.ToString(2)} {(int)code} {description}";
+			var s = $"HTTP/1.0 {(int)code} {description}";
 			responseWriter.WriteLine(s);
 		}
 

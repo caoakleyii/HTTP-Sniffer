@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.2015
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpLogger", "ConsoleApplication1\HttpLogger.csproj", "{605D6E35-4974-40B4-9466-89F57FDC3682}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpLogger", "HttpLogger\HttpLogger.csproj", "{605D6E35-4974-40B4-9466-89F57FDC3682}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HttpLogger.Services.UnitTest", "HttpLogger.Services.UnitTest\HttpLogger.Services.UnitTest.csproj", "{56A0DD6E-C853-44A8-8775-93F2817C634A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{605D6E35-4974-40B4-9466-89F57FDC3682}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{605D6E35-4974-40B4-9466-89F57FDC3682}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{605D6E35-4974-40B4-9466-89F57FDC3682}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56A0DD6E-C853-44A8-8775-93F2817C634A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56A0DD6E-C853-44A8-8775-93F2817C634A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56A0DD6E-C853-44A8-8775-93F2817C634A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56A0DD6E-C853-44A8-8775-93F2817C634A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
