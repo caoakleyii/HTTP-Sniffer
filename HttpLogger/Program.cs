@@ -30,25 +30,25 @@ namespace HttpLogger
             Console.WriteLine("\n ----==============----");
             Console.WriteLine(" Welcome to HTTP Logger");
             Console.WriteLine(" ----==============----");
-            Console.WriteLine("\n Choose which type of HTTP monitoring you would like to use.");
+            Console.WriteLine("\n Choose which type of HTTP monitoring you would like to use.\n");
                         
             while (true)
 			{
-				Console.WriteLine(" 1. Raw Socket Monitoring [HTTP Only]");
-				Console.WriteLine(" 2. Proxy Server Monitoring [Allows HTTPS]");
-				var key = Console.ReadKey(true);
+				Console.WriteLine(" 1. Proxy Server Monitoring [Allows HTTPS] - Recommended");
+			    Console.WriteLine(" 2. Raw Socket Monitoring [HTTP Only]");
+                var key = Console.ReadKey(true);
 
 				switch (key.KeyChar)
 				{
 					case '1':
-						_monitor = _container.GetService<ISocketMonitor>();
-                        _monitor.Start();
-						break;
-					case '2':
                         _monitor = _container.GetService<IProxyServerMonitor>();
 						_monitor.Start();
 						break;
-					default:
+				    case '2':
+				        _monitor = _container.GetService<ISocketMonitor>();
+				        _monitor.Start();
+				        break;
+                    default:
 						Console.WriteLine("\n Sorry, invalid option.");
 						continue;
 				}

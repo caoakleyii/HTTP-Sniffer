@@ -31,7 +31,7 @@ namespace HttpLogger.Models
         /// Gets a formated string of the notification.
         /// </summary>
         public string Notification => IsOverThreshold
-            ? $"High traffic generated an alert - hits = {this.RequestCount}, triggered at {this.NotificationDateTime}"
-            : $"Traffic throughput is not over the threshold, hits = {this.RequestCount}, triggered at {this.NotificationDateTime}";
+            ? $"| High traffic generated an alert - hits = {this.RequestCount}, triggered at {this.NotificationDateTime} |"
+            : $"| Traffic throughput is not over the threshold, hits = {this.RequestCount}, triggered at {this.NotificationDateTime} |";
     }
 }

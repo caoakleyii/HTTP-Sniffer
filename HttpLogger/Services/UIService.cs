@@ -94,7 +94,7 @@ namespace HttpLogger.Services
 
                     Console.ForegroundColor = ConsoleColor.DarkCyan;
                     Console.Write(
-                        $"{httpTrace.ClientIPAddress} - - [{httpTrace.RequestDate:%d/%MMM/%yyyy:%H:%mm:%ss %z}] {httpTrace.Method} {httpTrace.RemoteUri.AbsolutePath} {httpTrace.StatusCode ?? "-"} {httpTrace.ContentSize}");
+                        $"{httpTrace.ClientIPAddress} - - [{httpTrace.RequestDate:dd/MM/yyyy:H:mm:ss zzz}] {httpTrace.Method} {httpTrace.RemoteUri.AbsolutePath} {httpTrace.StatusCode ?? "-"} {httpTrace.ContentSize}");
                 }
 
                 // Display most hit requests and interesting facts.
