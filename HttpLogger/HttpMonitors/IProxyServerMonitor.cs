@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HttpLogger.HttpMonitors
 {
-    interface IProxyServer : IMonitor
+    public interface IProxyServerMonitor : IMonitor
     {
     }
 }

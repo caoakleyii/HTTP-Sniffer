@@ -1,15 +1,13 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using HttpLogger.Models;
 using NLog;
-using System.Linq;
 using System.Text;
 
 namespace HttpLogger.Contexts
 {
     /// <summary>
-    /// Defines the <see cref="FileContext"/> singleton class which provides facilities for querying and intereacting with the file storage of our http trace logs.
+    /// Defines the <see cref="FileContext"/> class which provides facilities for querying and interacting with the file storage of our http trace logs.
     /// </summary>
 	public class FileContext : IFileContext
 	{
@@ -18,7 +16,7 @@ namespace HttpLogger.Contexts
         /// </summary>
 		public FileContext()
 		{
-			this.NLogger = NLog.LogManager.GetCurrentClassLogger();
+			this.NLogger = LogManager.GetCurrentClassLogger();
 		    this.HttpTraces = new OrderedDictionary();
 		}
         

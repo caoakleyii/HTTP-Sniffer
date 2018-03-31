@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Configuration;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
-using HttpLogger.Contexts;
-using HttpLogger.Repositories;
 using HttpLogger.Services;
 using Microsoft.Win32;
 using NLog;
@@ -14,25 +11,25 @@ using Org.BouncyCastle.Crypto;
 namespace HttpLogger.HttpMonitors
 {
     /// <summary>
-    /// Defines the <see cref="ProxyServer"/> class which is used as a man in the middle approach to listen to HTTP traffic on the current machine.
+    /// Defines the <see cref="ProxyServerMonitor"/> class which is used as a man in the middle approach to listen to HTTP traffic on the current machine.
     /// </summary>
-    public class ProxyServer : IProxyServer
+    public class ProxyServerMonitor : IProxyServerMonitor
     {
         
         [DllImport("wininet.dll")]
         private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
         private static volatile AsymmetricKeyParameter _issuerKey;
 
-        private const string DefaultAddress = "127.0.0.1";
-        private const int DefaultPort = 8642;
+        private const string DEFAULT_ADDRESS = "127.0.0.1";
+        private const int DEFAULT_PORT = 8642;
         	            
         /// <summary>
-        /// Creates a new instance of a <see cref="ProxyServer"/> server, with the provided IP addrress and port.
+        /// Creates a new instance of a <see cref="ProxyServerMonitor"/> server, with the provided IP addrress and port.
         /// </summary>
         /// <param name="httpTracerService">The <see cref="IHttpTracerService"/> instance. </param>
         /// <param name="address">The IP Address the proxy server will be listening on.</param>
         /// <param name="port">The port number the proxy server will be listening on.</param>
-        public ProxyServer(IHttpTracerService httpTracerService, string address = DefaultAddress, int port = DefaultPort)
+        public ProxyServerMonitor(IHttpTracerService httpTracerService, string address = DEFAULT_ADDRESS, int port = DEFAULT_PORT)
 		{
 			NLogger = LogManager.GetCurrentClassLogger();
 
@@ -62,12 +59,12 @@ namespace HttpLogger.HttpMonitors
         public IHttpTracerService HttpTracerService { get; set; }
 
         /// <summary>
-        /// Gets the port being used by the current instance of <see cref="ProxyServer"/>.
+        /// Gets the port being used by the current instance of <see cref="ProxyServerMonitor"/>.
         /// </summary>
         public int Port { get; }
 
         /// <summary>
-        /// Gets the Server Address being used by the current instance of of <see cref="ProxyServer"/>.
+        /// Gets the Server Address being used by the current instance of of <see cref="ProxyServerMonitor"/>.
         /// </summary>
         public string ServerAddress { get; }
 

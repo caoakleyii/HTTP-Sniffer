@@ -1,5 +1,4 @@
 ﻿using System;
-using HttpLogger.HttpMonitors;
 using HttpLogger.Models;
 
 namespace HttpLogger.Services

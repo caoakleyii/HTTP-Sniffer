@@ -34,7 +34,7 @@ namespace HttpLogger.Services.UnitTest
 
             // Stub out our mock repository withour mock data
             stubTraceRepository.Stub(x => x.ReadTraces()).Return(testTraces);
-            var gui = new GUI();
+            var gui = new UIService();
 
             // Inject our mock repo into our service
             var service = new HttpTracerService(stubTraceRepository, gui);
@@ -102,7 +102,7 @@ namespace HttpLogger.Services.UnitTest
 
             // Stub out our mock repository withour mock data
             stubTraceRepository.Stub(x => x.ReadTraces()).Return(testTraces);
-            var gui = new GUI();
+            var gui = new UIService();
 
             // Inject our mock repo into our service
             var service = new HttpTracerService(stubTraceRepository, gui);
@@ -169,7 +169,7 @@ namespace HttpLogger.Services.UnitTest
 
             // Stub out our mock repository withour mock data
             stubTraceRepository.Stub(x => x.ReadTraces()).Return(testTraces);
-            var gui = new GUI();
+            var gui = new UIService();
 
             // Inject our mock repo into our service
             var service = new HttpTracerService(stubTraceRepository, gui);

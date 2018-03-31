@@ -1,6 +1,6 @@
 ﻿namespace HttpLogger.HttpMonitors
 {
-    interface ISocketSniff : IMonitor
+    public interface ISocketMonitor : IMonitor
     {
     }
 }

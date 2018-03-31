@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Threading;
-using HttpLogger.HttpMonitors;
 using HttpLogger.Models;
 using HttpLogger.Repositories;
 using Timer = System.Timers.Timer;
@@ -41,7 +38,7 @@ namespace HttpLogger.Services
             }
         }
         
-        public IGUI GUI { get; set; }
+        public IUIService GUI { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="System.Timers.Timer"/> object.
@@ -59,7 +56,7 @@ namespace HttpLogger.Services
         /// Creates a new instance of <see cref="HttpTracerService"/>
         /// </summary>
         /// <param name="traceRepository">The HttpTraceRepository implementation</param>
-        public HttpTracerService(IHttpTraceRepository traceRepository, IGUI gui)
+        public HttpTracerService(IHttpTraceRepository traceRepository, IUIService gui)
         {
             this.HttpTraceRepository = traceRepository;
             this.GUI = gui;

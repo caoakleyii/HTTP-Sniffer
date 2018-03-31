@@ -10,16 +10,16 @@ using System.Threading;
 namespace HttpLogger.HttpMonitors
 {
     /// <summary>
-    /// Defines a <see cref="SocketSniff"/> which monitors traffic on a socket directly.
+    /// Defines a <see cref="SocketMonitor"/> which monitors traffic on a socket directly.
     /// </summary>
-    public class SocketSniff : ISocketSniff
+    public class SocketMonitor : ISocketMonitor
     {
         private readonly byte[] _byteData = new byte[65536];
         
         private bool _open;
 	    private bool _monitor;
         private string _localIPAddress;
-        private string[] _dataHeaderSplitter = new[] { "\r\n" };
+        private readonly string[] _dataHeaderSplitter = { "\r\n" };
 
         /// <summary>
         /// Gets or sets the <see cref="IHttpTracerService"/> implementation
@@ -37,10 +37,10 @@ namespace HttpLogger.HttpMonitors
         private Socket Socket { get; set; }
 
         /// <summary>
-        /// Creates a new instance of <see cref="SocketSniff"/> monitoring data on a socket directly.
+        /// Creates a new instance of <see cref="SocketMonitor"/> monitoring data on a socket directly.
         /// </summary>
         /// <param name="httpTracerService"></param>
-        public SocketSniff(IHttpTracerService httpTracerService)
+        public SocketMonitor(IHttpTracerService httpTracerService)
         {
             this.HttpTracerService = httpTracerService;
         }
@@ -51,11 +51,11 @@ namespace HttpLogger.HttpMonitors
         public void Start()
         {   
             // create dummy socket to find machines IP address.
-            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
             {
                 socket.Connect("8.8.8.8", 65530);
-                IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
-                _localIPAddress = endPoint.Address.ToString();
+                if (socket.LocalEndPoint is IPEndPoint endPoint)
+                    _localIPAddress = endPoint.Address.ToString();
             }
 
             this.ListenerThread = new Thread(Listen);
@@ -128,8 +128,6 @@ namespace HttpLogger.HttpMonitors
         /// <param name="length">Content length</param>
         private void ReadBytes(byte[] bytes, int length)
         {
-            byte[] data;
-
             using (var memoryStream = new MemoryStream(bytes, 0, length))
             using (var binaryReader = new BinaryReader(memoryStream))
             {
@@ -169,7 +167,7 @@ namespace HttpLogger.HttpMonitors
                 // Next 32 bits have destination IP
                 var destinationIPAddress = (uint)binaryReader.ReadInt32();
                 var dataSize = totalLength - headerLength;
-                data = new byte[dataSize];
+                var data = new byte[dataSize];
 
                 Array.Copy(bytes, headerLength, data, 0, dataSize);
 
@@ -190,8 +188,6 @@ namespace HttpLogger.HttpMonitors
         /// <param name="request">SocketRequest used to handle tracing.</param>
         private void ReadTCP(byte[] bytes, int length, SocketRequest request)
         {
-            var client = new TcpClient();
-            
             using (var dataStream = new MemoryStream(bytes, 0, length))
             using (var dataReader = new BinaryReader(dataStream))
             {
@@ -207,22 +203,23 @@ namespace HttpLogger.HttpMonitors
                 var urgentPointer = (ushort)IPAddress.NetworkToHostOrder(dataReader.ReadInt16());                
                 var data = Encoding.ASCII.GetString(bytes, dataOffsetLength, bytes.Length - dataOffsetLength);
 
-                if (data.Contains("HTTP/1"))
-                {
-                    var dataArray = data.Split(_dataHeaderSplitter, StringSplitOptions.None);
-                    request.HttpCommand = dataArray[0];
+                if (!data.Contains("HTTP/1")) return;
 
-                    var httpCommandArray = request.HttpCommand.Split(' ');
-                    request.Method = httpCommandArray[0];
+                var dataArray = data.Split(_dataHeaderSplitter, StringSplitOptions.None);
+                request.HttpCommand = dataArray[0];
 
-                    var path = httpCommandArray[1];
-                    var host = dataArray[1].Split(' ')[1];
+                var httpCommandArray = request.HttpCommand.Split(' ');
+                request.Method = httpCommandArray[0];
 
-                    request.RemoteUri = new Uri($"http://{host}{path}");
-                    request.RequestDateTime = DateTime.Now;
-                    request.ContentLength = length;
-                    this.HttpTracerService.TraceSocketRequest(request);
-                }
+                var path = httpCommandArray[1];
+                var host = dataArray[1].Split(' ')[1];
+
+                request.RemoteUri = new Uri($"http://{host}{path}");
+                request.RequestDateTime = DateTime.Now;
+                request.ContentLength = length;
+
+                // Trace and Log this request.
+                this.HttpTracerService.TraceSocketRequest(request);
 
             }
         }
