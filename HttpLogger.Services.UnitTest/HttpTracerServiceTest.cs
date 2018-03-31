@@ -9,7 +9,7 @@ using Rhino.Mocks;
 namespace HttpLogger.Services.UnitTest
 {
     [TestClass]
-    public class HttpTracerService_Test
+    public class HttpTracerServiceTest
     {
         [TestMethod]
         public void MonitorHighTraffic_AboveThreshold()

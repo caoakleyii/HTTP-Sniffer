@@ -168,8 +168,18 @@ namespace HttpLogger.HttpMonitors
                     }
                 }
             }
-            catch (ThreadAbortException) { }
-            catch (SocketException) { }
+            catch (ThreadAbortException ex)
+            {
+                this.NLogger.Warn(ex);
+            }
+            catch (SocketException ex)
+            {
+                this.NLogger.Warn(ex);
+            }
+            catch (Exception ex)
+            {
+                this.NLogger.Error(ex);
+            }
         }
 
 		/// <summary>

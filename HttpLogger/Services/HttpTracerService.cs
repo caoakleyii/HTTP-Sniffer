@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using HttpLogger.Models;
 using HttpLogger.Repositories;
+using NLog;
 using Timer = System.Timers.Timer;
 
 namespace HttpLogger.Services
@@ -50,7 +51,12 @@ namespace HttpLogger.Services
         /// Gets or sets the <see cref="Thread"/> object that is used to monitor 
         /// traffic volume.
         /// </summary>
-        private Thread TrafficThread { get; set; }                
+        private Thread TrafficThread { get; set; }        
+
+        /// <summary>
+        /// Gets the current class' instance of an <see cref="ILogger"/>.
+        /// </summary>
+        private ILogger NLogger { get; }
 
         /// <summary>
         /// Creates a new instance of <see cref="HttpTracerService"/>
@@ -60,6 +66,7 @@ namespace HttpLogger.Services
         {
             this.HttpTraceRepository = traceRepository;
             this.GUI = gui;
+            this.NLogger = LogManager.GetCurrentClassLogger();
         }
         
         /// <summary>
@@ -134,7 +141,7 @@ namespace HttpLogger.Services
         {
             var threadRequest = (ThreadObject)objThreshold;
             var threshold = (int)threadRequest.ThreadStartObject;
-            
+
             try
             {
                 var overThreshold = false;
@@ -153,6 +160,7 @@ namespace HttpLogger.Services
                         {
                             break;
                         }
+
                         requests++;
                     }
 
@@ -169,10 +177,12 @@ namespace HttpLogger.Services
 
                         if (this.GUI.TraceViewModel.CurrentNotifaction != null)
                         {
-                            this.GUI.TraceViewModel.NotificationHistory.Push(this.GUI.TraceViewModel.CurrentNotifaction);
+                            this.GUI.TraceViewModel.NotificationHistory.Push(this.GUI.TraceViewModel
+                                .CurrentNotifaction);
                         }
+
                         this.GUI.TraceViewModel.CurrentNotifaction = newNotifiaction;
-                        
+
                     }
                     else if (requests < threshold && overThreshold)
                     {
@@ -187,10 +197,12 @@ namespace HttpLogger.Services
 
                         if (this.GUI.TraceViewModel.CurrentNotifaction != null)
                         {
-                            this.GUI.TraceViewModel.NotificationHistory.Push(this.GUI.TraceViewModel.CurrentNotifaction);
+                            this.GUI.TraceViewModel.NotificationHistory.Push(this.GUI.TraceViewModel
+                                .CurrentNotifaction);
                         }
+
                         this.GUI.TraceViewModel.CurrentNotifaction = newNotifiaction;
-                        
+
                     }
                     else
                     {
@@ -198,6 +210,7 @@ namespace HttpLogger.Services
                         {
                             this.GUI.TraceViewModel.CurrentNotifaction = new ThresholdNotification();
                         }
+
                         this.GUI.TraceViewModel.CurrentNotifaction.RequestCount = requests;
                         this.GUI.TraceViewModel.CurrentNotifaction.NotificationDateTime = DateTime.Now;
                     }
@@ -205,7 +218,14 @@ namespace HttpLogger.Services
                     threadRequest.ThreadCallback(true);
                 }
             }
-            catch(ThreadAbortException) { }
+            catch (ThreadAbortException ex)
+            {
+                this.NLogger.Warn(ex);
+            }
+            catch (Exception ex)
+            {
+                this.NLogger.Error(ex);
+            }
         }
 
         /// <summary>
@@ -227,42 +247,48 @@ namespace HttpLogger.Services
             // The DnsSafeHost string of the most visited domain, so we can easily look it up through index.
 	        // the count for evaluating 
             var mostVisitedDnsSafeHost = string.Empty;
-		    var mostVisitedCount = 0; 
+		    var mostVisitedCount = 0;
+	        try
+	        {
+	            foreach (var traceObj in traces.Values)
+	            {
+	                if (!(traceObj is HttpTrace trace))
+	                    continue;
 
-			foreach(var traceObj in traces.Values)
-			{
-			    if (!(traceObj is HttpTrace trace))
-			        continue;
+	                var dnsSafeHost = trace.RemoteUri.DnsSafeHost;
+	                var count = 0;
 
-				var dnsSafeHost = trace.RemoteUri.DnsSafeHost;
-			    var count = 0;
+	                // if this is our first record of this website, create a new key/value pair
+	                if (!websitesVisited.ContainsKey(dnsSafeHost))
+	                {
+	                    websitesVisited.Add(dnsSafeHost, new Tuple<List<HttpTrace>, int>(new[] {trace}.ToList(), count));
+	                }
+	                else
+	                {
+	                    // else update the existing
+	                    var listOfTraces = websitesVisited[dnsSafeHost].Item1;
 
-                // if this is our first record of this website, create a new key/value pair
-			    if (!websitesVisited.ContainsKey(dnsSafeHost))
-			    {
-                    websitesVisited.Add(dnsSafeHost, new Tuple<List<HttpTrace>, int>(new[] {trace}.ToList(), count));
-			    }
-			    else
-			    {
-                    // else update the existing
-			        var listOfTraces = websitesVisited[dnsSafeHost].Item1;
+	                    count = websitesVisited[dnsSafeHost].Item2;
+	                    listOfTraces.Add(trace);
 
-			        count = websitesVisited[dnsSafeHost].Item2;
-			        listOfTraces.Add(trace);
+	                    websitesVisited[dnsSafeHost] = new Tuple<List<HttpTrace>, int>(listOfTraces, ++count);
+	                }
 
-                    websitesVisited[dnsSafeHost] = new Tuple<List<HttpTrace>, int>(listOfTraces, ++count);
-			    }
+	                if (count <= mostVisitedCount)
+	                {
+	                    continue;
+	                }
 
-			    if (count <= mostVisitedCount)
-				{
-					continue;
-				}
+	                mostVisitedCount = count;
+	                mostVisitedDnsSafeHost = dnsSafeHost;
+	            }
+	        }
+	        catch (Exception ex)
+	        {
+                this.NLogger.Error(ex);
+	        }
 
-				mostVisitedCount = count;
-				mostVisitedDnsSafeHost = dnsSafeHost;
-			}
-
-            if (string.IsNullOrWhiteSpace(mostVisitedDnsSafeHost))
+	        if (string.IsNullOrWhiteSpace(mostVisitedDnsSafeHost))
             {
                 return;
             }
