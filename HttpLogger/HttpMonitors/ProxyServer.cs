@@ -16,37 +16,23 @@ namespace HttpLogger.HttpMonitors
     /// <summary>
     /// Defines the <see cref="ProxyServer"/> class which is used as a man in the middle approach to listen to HTTP traffic on the current machine.
     /// </summary>
-    public class ProxyServer : IMonitor
+    public class ProxyServer : IProxyServer
     {
         
         [DllImport("wininet.dll")]
         private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
         private static volatile AsymmetricKeyParameter _issuerKey;
 
-        private static readonly string DefaultAddress = ConfigurationManager.AppSettings["ProxyIPAddress"] ?? string.Empty;
-        private static readonly int DefaultPort = int.Parse(ConfigurationManager.AppSettings["ProxyPort"]);
-
-	    
-        /// <summary>
-        /// Creates a new instance of a <see cref="ProxyServer"/> server, with the default IP address and port defined within the app settings.
-        /// 
-        /// App Setting keys are defined as:
-        /// "ProxyIPAddress" for the default IP Address
-        /// "ProxyPort" for the default port number
-        /// </summary>
-        public ProxyServer() : this(IoC.Instance.Resolve<IHttpTracerService>(), DefaultAddress, DefaultPort)
-        {
-	        
-        }
-
-
+        private const string DefaultAddress = "127.0.0.1";
+        private const int DefaultPort = 8642;
+        	            
         /// <summary>
         /// Creates a new instance of a <see cref="ProxyServer"/> server, with the provided IP addrress and port.
         /// </summary>
         /// <param name="httpTracerService">The <see cref="IHttpTracerService"/> instance. </param>
         /// <param name="address">The IP Address the proxy server will be listening on.</param>
         /// <param name="port">The port number the proxy server will be listening on.</param>
-        internal ProxyServer(IHttpTracerService httpTracerService, string address, int port)
+        public ProxyServer(IHttpTracerService httpTracerService, string address = DefaultAddress, int port = DefaultPort)
 		{
 			NLogger = LogManager.GetCurrentClassLogger();
 

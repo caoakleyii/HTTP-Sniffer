@@ -52,7 +52,7 @@ namespace HttpLogger.Models
         /// <summary>
         /// Gets or sets the <see cref="HttpStatusCode"/> response from the remote.
         /// </summary>
-		public HttpStatusCode StatusCode { get; set; }
+		public string StatusCode { get; set; }
 
         /// <summary>
         /// Gets or sets the content size in bytes. 

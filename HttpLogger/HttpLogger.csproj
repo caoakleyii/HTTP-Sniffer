@@ -72,8 +72,14 @@
     <Compile Include="Contexts\FileContext.cs" />
     <Compile Include="Contexts\IFileContext.cs" />
     <Compile Include="GUI.cs" />
-    <Compile Include="IoC.cs" />
+    <Compile Include="HttpMonitors\ISocketSniff.cs" />
+    <Compile Include="HttpMonitors\IProxyServer.cs" />
+    <Compile Include="IGUI.cs" />
+    <Compile Include="Models\ThreadObject.cs" />
+    <Compile Include="Models\COORD.cs" />
     <Compile Include="Models\HttpTrace.cs" />
+    <Compile Include="Models\SocketRequest.cs" />
+    <Compile Include="Models\ThresholdNotification.cs" />
     <Compile Include="Models\TraceView.cs" />
     <Compile Include="Repositories\HttpTraceRepository.cs" />
     <Compile Include="Repositories\IHttpTraceRepository.cs" />

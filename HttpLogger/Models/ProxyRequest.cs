@@ -46,7 +46,7 @@ namespace HttpLogger.Models
         /// <summary>
         /// Gets or sets the <see cref="HttpStatusCode"/> of the response from remote.
         /// </summary>
-		public HttpStatusCode StatusCode { get; set; }
+		public string StatusCode { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="DateTime"/> of the request.

@@ -14,43 +14,26 @@ namespace HttpLogger
     /// <summary>
     /// Defines a simple Inversion of Control class to resolve dependencies between services and repositories.
     /// </summary>
-    public class GUI
+    public class GUI : IGUI
     {
         /// <summary>
         /// Creates a new instance of a <see cref="GUI"/>. 
         /// </summary>
-        private GUI()
+        public GUI()
         {
             this.TraceViewModel = new TraceView();
         }
-
-        /// <summary>
-        /// Gets the singleton instance of the <see cref="GUI"/>
-        /// </summary>
-        public static GUI Instance => Nested.instance;
-
+        
         /// <summary>
         /// The <see cref="ServiceProvider"/> that's configured with a collection of dependencies and implementations.
         /// </summary>
         public TraceView TraceViewModel { get; }
 
         /// <summary>
-        /// Pirvate nested class for a lazy loading threadsafe singleton object
+        /// Gets or set a value indicating whether or not to display GUI
         /// </summary>
-        private class Nested
-        {
-            // Explicit static constructor to tell C# compiler
-            // not to mark type as beforefieldinit
-            // http://csharpindepth.com/Articles/General/Beforefieldinit.aspx
-            static Nested()
-            {
+        public bool DisplayGUI { get; set; }
 
-            }
-
-            /// <summary>
-            /// internal instance of the FileContext.
-            /// </summary>
-            internal static readonly GUI instance = new GUI();
-        }
     }
+
 }

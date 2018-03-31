@@ -173,7 +173,7 @@ namespace HttpLogger.Services
 			{
 					
 				//send the response status and response headers
-				request.StatusCode = response.StatusCode;
+				request.StatusCode = response.StatusCode.ToString();
 				WriteResponseStatus(request, response.StatusCode, response.StatusDescription, responseWriter);
 				WriteResponseHeaders(responseWriter, responseHeaders);
 

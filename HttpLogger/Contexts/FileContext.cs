@@ -47,7 +47,7 @@ namespace HttpLogger.Contexts
 			    if (!(trace.Key is HttpTrace t))
 			        continue;
 			    traceBuilder.AppendLine(
-			        $"{t.ClientIPAddress} - - [{t.RequestDate:%d/%MMM/%yyyy:%H:%mm:%ss %z}] {t.HttpCommand} {t.StatusCode} {t.ContentSize}");
+			        $"{t.ClientIPAddress} - - [{t.RequestDate:%d/%MMM/%yyyy:%H:%mm:%ss %z}] {t.HttpCommand} {t.StatusCode ?? "-"} {t.ContentSize}");
             } 
 
 			NLogger.Trace(traceBuilder);

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
+using HttpLogger.HttpMonitors;
 using HttpLogger.Models;
 using HttpLogger.Repositories;
 using Timer = System.Timers.Timer;
@@ -39,6 +41,8 @@ namespace HttpLogger.Services
             }
         }
         
+        public IGUI GUI { get; set; }
+
         /// <summary>
         /// Gets or sets the <see cref="System.Timers.Timer"/> object.
         /// Used to handle monitoring the most active requests and displaying it periodically.
@@ -49,22 +53,16 @@ namespace HttpLogger.Services
         /// Gets or sets the <see cref="Thread"/> object that is used to monitor 
         /// traffic volume.
         /// </summary>
-        private Thread TrafficThread { get; set; }
-
-        /// <summary>
-        /// Creates a new instance of <see cref="HttpTracerService"/>
-        /// </summary>
-	    public HttpTracerService() : this(IoC.Instance.Resolve<IHttpTraceRepository>())
-	    {
-	    }
+        private Thread TrafficThread { get; set; }                
 
         /// <summary>
         /// Creates a new instance of <see cref="HttpTracerService"/>
         /// </summary>
         /// <param name="traceRepository">The HttpTraceRepository implementation</param>
-        internal HttpTracerService(IHttpTraceRepository traceRepository)
+        public HttpTracerService(IHttpTraceRepository traceRepository, IGUI gui)
         {
             this.HttpTraceRepository = traceRepository;
+            this.GUI = gui;
         }
         
         /// <summary>
@@ -87,8 +85,31 @@ namespace HttpLogger.Services
 			this.HttpTraceRepository.CreateTrace(httpTrace);
 			this.HttpTraceRepository.SaveChanges();
 
-	        GUI.Instance.TraceViewModel.CurrentTrace = httpTrace;
+	        this.GUI.TraceViewModel.CurrentTrace = httpTrace;
 	    }
+
+        /// <summary>
+        /// Logs and saves an HTTP <see cref="SocketRequest"/>
+        /// </summary>
+        /// <param name="request">The <see cref="SocketRequest"/> to be traced, and logged.</param>
+        public void TraceSocketRequest(SocketRequest request)
+        {
+            var httpTrace = new HttpTrace
+            {
+                ClientIPAddress = request.IPAddress,
+                ContentSize = request.ContentLength,
+                HttpCommand = request.HttpCommand,
+                RemoteUri = request.RemoteUri,
+                RequestDate = request.RequestDateTime,
+                StatusCode = request.StatusCode,
+                Method = request.Method
+            };
+
+            this.HttpTraceRepository.CreateTrace(httpTrace);
+            this.HttpTraceRepository.SaveChanges();
+
+            this.GUI.TraceViewModel.CurrentTrace = httpTrace;
+        }
 
         /// <summary>
         /// Monitors the most active requests during the lifecycle of the application.
@@ -103,19 +124,25 @@ namespace HttpLogger.Services
         /// <summary>
         /// Monitors for high traffic past the provided threshold.
         /// </summary>
-        public void MonitorHighTraffic()
+        public void MonitorHighTraffic(ThreadObject threshold)
         {
            this.TrafficThread = new Thread(CalculateTrafficThroughput);
-           this.TrafficThread.Start();
+           this.TrafficThread.Start(threshold);            
         }
 
         /// <summary>
         /// Calculate the traffic, to monitor for high volumes.
         /// </summary>
-        private void CalculateTrafficThroughput()
+        private void CalculateTrafficThroughput(object objThreshold)
         {
+            var threadRequest = (ThreadObject)objThreshold;
+            var threshold = (int)threadRequest.ThreadStartObject;
+            
             try
             {
+                var overThreshold = false;
+                this.GUI.TraceViewModel.NotificationHistory = new Stack<ThresholdNotification>();
+
                 while (true)
                 {
                     var traces = this.HttpTraceRepository.ReadTraces();
@@ -132,7 +159,53 @@ namespace HttpLogger.Services
                         requests++;
                     }
 
-                    GUI.Instance.TraceViewModel.TrafficVolume = requests;
+                    if (requests > threshold && !overThreshold)
+                    {
+                        overThreshold = true;
+                        var newNotifiaction = new ThresholdNotification()
+                        {
+                            IsOverThreshold = true,
+                            NotificationDateTime = DateTime.Now,
+                            RequestCount = requests,
+                            IsNotificationNew = true
+                        };
+
+                        if (this.GUI.TraceViewModel.CurrentNotifaction != null)
+                        {
+                            this.GUI.TraceViewModel.NotificationHistory.Push(this.GUI.TraceViewModel.CurrentNotifaction);
+                        }
+                        this.GUI.TraceViewModel.CurrentNotifaction = newNotifiaction;
+                        
+                    }
+                    else if (requests < threshold && overThreshold)
+                    {
+                        overThreshold = false;
+                        var newNotifiaction = new ThresholdNotification()
+                        {
+                            IsOverThreshold = false,
+                            NotificationDateTime = DateTime.Now,
+                            RequestCount = requests,
+                            IsNotificationNew = true
+                        };
+
+                        if (this.GUI.TraceViewModel.CurrentNotifaction != null)
+                        {
+                            this.GUI.TraceViewModel.NotificationHistory.Push(this.GUI.TraceViewModel.CurrentNotifaction);
+                        }
+                        this.GUI.TraceViewModel.CurrentNotifaction = newNotifiaction;
+                        
+                    }
+                    else
+                    {
+                        if (this.GUI.TraceViewModel.CurrentNotifaction == null)
+                        {
+                            this.GUI.TraceViewModel.CurrentNotifaction = new ThresholdNotification();
+                        }
+                        this.GUI.TraceViewModel.CurrentNotifaction.RequestCount = requests;
+                        this.GUI.TraceViewModel.CurrentNotifaction.NotificationDateTime = DateTime.Now;
+                    }
+
+                    threadRequest.ThreadCallback(true);
                 }
             }
             catch(ThreadAbortException) { }
@@ -197,8 +270,11 @@ namespace HttpLogger.Services
                 return;
             }
 
-	        GUI.Instance.TraceViewModel.MostRequestedHost = mostVisitedDnsSafeHost;
-	        GUI.Instance.TraceViewModel.MostRequestedHostTraces = websitesVisited[mostVisitedDnsSafeHost].Item1.ToList();
+            var requestPercentage = $"{((decimal)mostVisitedCount / (decimal)traces.Count * 100.0m).ToString("0.##")}%";
+
+            this.GUI.TraceViewModel.MostRequestedPercentage = requestPercentage;
+	        this.GUI.TraceViewModel.MostRequestedHost = mostVisitedDnsSafeHost;
+	        this.GUI.TraceViewModel.MostRequestedHostTraces = websitesVisited[mostVisitedDnsSafeHost].Item1.ToList();
 	    }
 
         /// <summary>
